@@ -127,7 +127,7 @@ app.post('/api/stock-tobot', async (req, res) => {
     }
 
     // 4. 先回中间态
-    await sendText(msg.chat_id, '正在处理，请等待推送…')
+    await sendText(msg.chat_id, `正在调用AI使劲儿分析 ${stockCode} ，请等待推送...`)
 
     // 5. 调用业务 API（fire-and-forget，不等待结果）
     callStockApi(stockCode)
