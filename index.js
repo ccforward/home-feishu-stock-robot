@@ -1,9 +1,18 @@
+require('dotenv').config()
+
 const express = require('express')
 const axios = require('axios')
-const { FEISHU_ROBOT_APP_ID, FEISHU_ROBOT_APP_SECRET } = require('../config')
 
 const app = express()
 app.use(express.json())
+
+const FEISHU_ROBOT_APP_ID = process.env.FEISHU_ROBOT_APP_ID
+const FEISHU_ROBOT_APP_SECRET = process.env.FEISHU_ROBOT_APP_SECRET
+
+if (!FEISHU_ROBOT_APP_ID || !FEISHU_ROBOT_APP_SECRET) {
+  console.error('错误：缺少飞书机器人密钥，请在 .env 文件中配置 FEISHU_ROBOT_APP_ID 和 FEISHU_ROBOT_APP_SECRET')
+  process.exit(1)
+}
 
 // ========== 飞书工具函数 ==========
 
@@ -83,12 +92,11 @@ app.post('/api/stock-tobot', async (req, res) => {
     // 3.3 提取全文
     const text = JSON.parse(msg.content).text
 
-    // 3.4 从文本中提取股票代码（简单实现，可按需调整）
-    const stockCodeMatch = text.match(/\b(\d{6})\b/)
-    const stockCode = stockCodeMatch ? stockCodeMatch[1] : null
+    // 3.4 从文本中提取股票
+    const stockCode = text
 
     if (!stockCode) {
-      await sendText(msg.chat_id, '未检测到股票代码，请发送 6 位数字代码')
+      await sendText(msg.chat_id, '未检测到股票代码')
       return
     }
 
