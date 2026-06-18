@@ -59,7 +59,15 @@ async function callStockApi(stockCode) {
   return { success: true, data: { stock_code: stockCode, price: '模拟价格' } }
 }
 
-// ========== 路由 ==========
+app.get('/api/stock-tobot', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+  })
+})
+
+// ========== 飞书 Webhook 路由 ==========
 
 app.post('/api/stock-tobot', async (req, res) => {
   const json = req.body
@@ -96,7 +104,7 @@ app.post('/api/stock-tobot', async (req, res) => {
     const stockCode = text
 
     if (!stockCode) {
-      await sendText(msg.chat_id, '未检测到股票代码')
+      await sendText(msg.chat_id, '未检测到股票信息')
       return
     }
 
