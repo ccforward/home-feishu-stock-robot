@@ -97,10 +97,23 @@ app.post('/api/stock-tobot', async (req, res) => {
     const mentions = msg.mentions || []
     if (!mentions.some((m) => m.key === '@_user_1')) return
 
-    // 3.3 提取全文
-    const text = JSON.parse(msg.content).text
+    // 3.3 提取全文并清理 @机器人 的 mention 文本
+    let text = JSON.parse(msg.content).text
 
-    // 3.4 从文本中提取股票
+    // 移除所有 mention 标记（飞书消息中 @某人 会显示为 @_user_X 格式）
+    mentions.forEach((m) => {
+      if (m.key) {
+        // 使用字符串替换，避免正则转义问题
+        const escapedKey = m.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp('\\s*' + escapedKey + '\\s*', 'g')
+        text = text.replace(regex, ' ')
+      }
+    })
+
+    // 清理多余空格并 trim
+    text = text.replace(/\s+/g, ' ').trim()
+
+    // 3.4 提取股票代码
     const stockCode = text
 
     if (!stockCode) {
@@ -124,8 +137,9 @@ app.post('/api/stock-tobot', async (req, res) => {
 
 // ========== 启动 ==========
 
-const PORT = 7007
+const PORT = process.env.PORT || 7007
 const HOST = '0.0.0.0'
+
 app.listen(PORT, HOST, () => {
-  console.log(`Stock bot server running on http://localhost:${PORT}`)
+  console.log(`Stock bot server running on http://${HOST}:${PORT}`)
 })
