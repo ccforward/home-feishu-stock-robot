@@ -8,9 +8,15 @@ app.use(express.json())
 
 const FEISHU_ROBOT_APP_ID = process.env.FEISHU_ROBOT_APP_ID
 const FEISHU_ROBOT_APP_SECRET = process.env.FEISHU_ROBOT_APP_SECRET
+const API_STOCK_PATH = process.env.API_STOCK_PATH
 
 if (!FEISHU_ROBOT_APP_ID || !FEISHU_ROBOT_APP_SECRET) {
   console.error('错误：缺少飞书机器人密钥，请在 .env 文件中配置 FEISHU_ROBOT_APP_ID 和 FEISHU_ROBOT_APP_SECRET')
+  process.exit(1)
+}
+
+if (!API_STOCK_PATH) {
+  console.error('错误：缺少股票 API 地址，请在 .env 文件中配置 API_STOCK_PATH')
   process.exit(1)
 }
 
@@ -46,17 +52,17 @@ async function sendText(chatId, text) {
   }
 }
 
-// ========== 业务模拟 ==========
+// ========== 业务：调用股票 API（fire-and-forget）==========
 
-async function callStockApi(stockCode) {
-  // TODO: 替换为真实的 API 调用
-  // const res = await axios.post('https://your-api.com/stock', {
-  //   stock_code: stockCode,
-  // })
-  // return res.data
-
-  console.log(`[模拟] 调用股票 API，stock_code: ${stockCode}`)
-  return { success: true, data: { stock_code: stockCode, price: '模拟价格' } }
+function callStockApi(stockCode) {
+  axios
+    .post(API_STOCK_PATH, { stock_code: stockCode })
+    .then(() => {
+      console.log(`[成功] 已推送 stock_code: ${stockCode}`)
+    })
+    .catch((err) => {
+      console.error(`[失败] 推送 stock_code: ${stockCode} 出错:`, err.message)
+    })
 }
 
 app.get('/api/stock-tobot', (req, res) => {
@@ -103,7 +109,6 @@ app.post('/api/stock-tobot', async (req, res) => {
     // 移除所有 mention 标记（飞书消息中 @某人 会显示为 @_user_X 格式）
     mentions.forEach((m) => {
       if (m.key) {
-        // 使用字符串替换，避免正则转义问题
         const escapedKey = m.key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         const regex = new RegExp('\\s*' + escapedKey + '\\s*', 'g')
         text = text.replace(regex, ' ')
@@ -124,14 +129,8 @@ app.post('/api/stock-tobot', async (req, res) => {
     // 4. 先回中间态
     await sendText(msg.chat_id, '正在处理，请等待推送…')
 
-    // 5. 调用业务 API
-    try {
-      const result = await callStockApi(stockCode)
-      await sendText(msg.chat_id, `处理完成：\n${JSON.stringify(result, null, 2)}`)
-    } catch (error) {
-      console.error(error)
-      await sendText(msg.chat_id, '业务处理失败，请稍后重试')
-    }
+    // 5. 调用业务 API（fire-and-forget，不等待结果）
+    callStockApi(stockCode)
   })
 })
 
