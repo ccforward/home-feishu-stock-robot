@@ -125,6 +125,7 @@ app.post('/api/stock-tobot', async (req, res) => {
 // ========== 启动 ==========
 
 const PORT = 7007
-app.listen(PORT, () => {
+const HOST = '0.0.0.0'
+app.listen(PORT, HOST, () => {
   console.log(`Stock bot server running on http://localhost:${PORT}`)
 })
